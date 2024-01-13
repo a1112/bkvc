@@ -1,0 +1,2 @@
+
+DLL_DIR = "hikvision"
