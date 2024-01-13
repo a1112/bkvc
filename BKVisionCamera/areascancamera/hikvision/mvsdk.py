@@ -54,9 +54,7 @@ class MvSdk(CameraSdkInterface):
             raise Exception("打开设备失败")
         self.triggerMode = MV_TRIGGER_MODE_OFF
         # 开始取流
-        ret = self.cam.MV_CC_StartGrabbing()
-        if ret != 0:
-            raise Exception("开始取流失败")
+
 
     @triggerMode.setter
     def triggerMode(self, value=MV_TRIGGER_MODE_OFF):
@@ -78,6 +76,7 @@ class MvSdk(CameraSdkInterface):
         ret = self.cam.MV_CC_GetOneFrameTimeout(byref(pData), sizeof(pData), stOutFrame, timeout)
         if ret != 0:
             raise Exception("采集图像失败")
+        return ret
 
     def stopGrabbing(self):
         # 停止取流
@@ -113,11 +112,14 @@ def main():
     # 开始取流
     cam = MvSdk()
     cam.init()
+    cam.open()
     cam.startGrabbing()
     stOutFrame = MV_FRAME_OUT_INFO_EX()
-    pData = (c_ubyte * 2048 * 2048)()  # 假设最大分辨率为2048x2048
+    pData = (c_ubyte * 3072 * 2048)()  # 假设最大分辨率为2048x2048
     while True:
-        ret = cam.getOneFrameTimeout(byref(pData), sizeof(pData), stOutFrame, 1000)
+        print(pData)
+        ret = cam.getOneFrameTimeout(pData, stOutFrame, 1000)
+        print(ret)
         if ret == 0:
             print(f"成功采集一帧：宽度={stOutFrame.nWidth}，高度={stOutFrame.nHeight}")
             # 数据处理，这里仅将其转换为NumPy数组并显示
@@ -125,8 +127,7 @@ def main():
             frame_data = frame_data.reshape((stOutFrame.nHeight, stOutFrame.nWidth))
             cv2.imshow("Frame", frame_data)
             cv2.waitKey(1)
-        else:
-            print("采集图像失败")
+
 
 
 if __name__ == '__main__':
