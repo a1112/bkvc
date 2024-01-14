@@ -1,3 +1,5 @@
 from pathlib import Path
 
-DLL_ROOT = Path(r"__file__").parent/"dll"
+DLL_ROOT = Path(__file__).parent / "dll"
+
+ENCODE = "utf-8"
