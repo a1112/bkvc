@@ -3,14 +3,14 @@
 
 
 name: Hikvision #  Hikvision 海康机器人 CCD
+configFile: demo/hikCA-060-GM.yaml # 相机配置文件路径
 
 
 selectType: ip # 选择相机的方式  ip 为IP地址  serial 为串口号 index 为相机索引号
 ip: 192.168.3.12
-mac: 00-00-00-00-00-00
+mac: 00:00:C4:2F:90:F3:CB:83
 
 
-configFile: demo/hikCA-060-GM.yaml # 相机配置文件路径
 
 
 useOtherConfig: false # 是否使用其他配置文件
