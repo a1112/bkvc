@@ -1,4 +1,8 @@
-from ctypes import POINTER, cast, c_ubyte, byref, sizeof
+import ctypes
+import socket
+import struct
+from ctypes import POINTER, cast, c_ubyte, byref, sizeof, create_string_buffer
+from typing import List
 
 import cv2
 import numpy as np
@@ -6,41 +10,110 @@ import numpy as np
 from BKVisionCamera.areascancamera.hikvision.MvImport.CameraParams_const import MV_GIGE_DEVICE, MV_USB_DEVICE, \
     MV_ACCESS_Exclusive, MV_CAMERALINK_DEVICE
 from BKVisionCamera.areascancamera.hikvision.MvImport.CameraParams_header import MV_CC_DEVICE_INFO_LIST, \
-    MV_CC_DEVICE_INFO, MV_TRIGGER_MODE_OFF, MV_FRAME_OUT_INFO_EX, MVCC_ENUMVALUE, MVCC_INTVALUE
+    MV_CC_DEVICE_INFO, MV_TRIGGER_MODE_OFF, MV_FRAME_OUT_INFO_EX, MVCC_ENUMVALUE, MVCC_INTVALUE, MV_GIGE_DEVICE_INFO
 from BKVisionCamera.areascancamera.hikvision.MvImport.MvCameraControl_class import MvCamera
-from base.property import CameraSdkInterface
+from BKVisionCamera.base.property import CameraSdkInterface, CameraInfo
 
 
 class MvSdk(CameraSdkInterface):
 
-    def __init__(self):
+    def saveConfig(self, config):
+        pass
+
+    def loadConfig(self, config):
+        pass
+
+    def __init__(self, camera_info: CameraInfo = None):
+        self.camera_info = camera_info
         super().__init__()
         self.cam = MvCamera()
 
-    def enumDevices(self):
+    @staticmethod
+    def _getCameraInfo_(camera_):
+
+        stDevList = MV_CC_DEVICE_INFO_LIST()
+        ret = camera_.MV_CC_EnumDevices(MV_GIGE_DEVICE | MV_USB_DEVICE | MV_CAMERALINK_DEVICE | MV_CAMERALINK_DEVICE
+                                        , stDevList)
+        if ret != 0:
+            raise Exception("枚举设备失败")
+        res = []
+        for i in range(0, stDevList.nDeviceNum):
+            # elif stDeviceInfo.nDeviceType == MV_USB_DEVICE:
+            #     print("USB Device")
+            #     print("Manufacturer Name:", stDeviceInfo.SpecialInfo.stUsb3VInfo.chManufacturerName)
+            #     print("Model Name:", stDeviceInfo.SpecialInfo.stUsb3VInfo.chModelName)
+            #     print("Serial Number:", stDeviceInfo.SpecialInfo.stUsb3VInfo.chSerialNumber)
+            camera_info = MvSdk.createCamera(stDevList.pDeviceInfo[i])
+            res.append(camera_info)
+        return res
+
+    @staticmethod
+    def createCamera(stDeviceInfo):
+        stDeviceInfo = cast(stDeviceInfo, POINTER(MV_CC_DEVICE_INFO)).contents
+        camera_info = CameraInfo(stDeviceInfo)
+        camera_info.majorVer = stDeviceInfo.nMajorVer
+        camera_info.minorVer = stDeviceInfo.nMinorVer
+        mac_high = stDeviceInfo.nMacAddrHigh
+        mac_low = stDeviceInfo.nMacAddrLow
+        mac_address = f"{mac_high:08X}{mac_low:08X}"
+        macAddress = ':'.join(mac_address[i:i + 2] for i in range(0, len(mac_address), 2))
+        camera_info.macAddress = macAddress
+
+        def toStr(data, count=32):
+            buffer = create_string_buffer(32)
+
+            # 将字节数组复制到字符串缓冲区
+            ctypes.memmove(buffer, data, count)
+
+            # 将字节数据转换为字符串
+            string_data = buffer.value.decode('utf-8')
+            return string_data
+
+        def nto(addr):
+            return socket.inet_ntoa(struct.pack('>L', addr))
+
+        stDeviceInfo.SpecialInfo.stGigEInfo: MV_GIGE_DEVICE_INFO
+        camera_info.ipCfgOption = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nIpCfgOption)
+        camera_info.ipCfgCurrent = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nIpCfgCurrent)
+        camera_info.currentIp = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nCurrentIp)
+        camera_info.currentSubNetMask = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nCurrentSubNetMask)
+        camera_info.defultGateWay = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nDefultGateWay)
+        camera_info.manufacturerName = toStr(stDeviceInfo.SpecialInfo.stGigEInfo.chManufacturerName)
+        camera_info.modelName = toStr(stDeviceInfo.SpecialInfo.stGigEInfo.chModelName)
+        camera_info.deviceVersion = toStr(stDeviceInfo.SpecialInfo.stGigEInfo.chDeviceVersion)
+        camera_info.manufacturerSpecificInfo = toStr(stDeviceInfo.SpecialInfo.stGigEInfo.chManufacturerSpecificInfo)
+        camera_info.serialNumber = toStr(stDeviceInfo.SpecialInfo.stGigEInfo.chSerialNumber)
+        camera_info.userDefinedName = toStr(stDeviceInfo.SpecialInfo.stGigEInfo.chUserDefinedName)
+        camera_info.netExport = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nNetExport)
+        return camera_info
+
+    @staticmethod
+    def getDeviceList() -> List[CameraInfo]:
+        cam_ = MvCamera()
+        return MvSdk._getCameraInfo_(cam_)
+
+    def _enumDevices_(self):
         # 创建相机实例
         stDevList = MV_CC_DEVICE_INFO_LIST()
         ret = self.cam.MV_CC_EnumDevices(MV_GIGE_DEVICE | MV_USB_DEVICE | MV_CAMERALINK_DEVICE | MV_CAMERALINK_DEVICE
                                          , stDevList)
         return stDevList, ret
 
-    def init(self, index=0):
-        stDevList, ret = self.enumDevices()
-        if ret != 0:
-            raise Exception("枚举设备失败")
-        if stDevList.nDeviceNum == 0:
-            raise Exception("未找到设备")
-        if index >= stDevList.nDeviceNum:
-            raise Exception("设备索引超出范围")
+    def init(self):
+        stDevList, ret = self._enumDevices_()
+        index = -1
+        for i in range(0, stDevList.nDeviceNum):
+            if self.camera_info == MvSdk.createCamera(stDevList.pDeviceInfo[i]):
+                index = i
+                break
         stDevInfo = cast(stDevList.pDeviceInfo[index], POINTER(MV_CC_DEVICE_INFO)).contents
         # 选择第一台相机并创建句柄
         ret = self.cam.MV_CC_CreateHandle(stDevInfo)
         if ret != 0:
             raise Exception("创建句柄失败")
-        return stDevList, ret
+        return ret
 
-    def open(self, index=0):
-        self.init(index)
+    def open(self):
         # 打开设备
         self._open()
         self.startGrabbing()
@@ -308,7 +381,7 @@ class MvSdk(CameraSdkInterface):
             raise Exception("销毁句柄失败")
         return ret
 
-    def close(self):
+    def release(self):
         # 停止取流
         self.stopGrabbing()
         # 关闭设备
@@ -332,7 +405,8 @@ class MvSdk(CameraSdkInterface):
 
 
 if __name__ == '__main__':
-    cam = MvSdk()
+    cam = MvSdk(MvSdk.getDeviceList()[0])
+    cam.init()
     cam.open()
     while True:
         frame = cam.getFrame()
