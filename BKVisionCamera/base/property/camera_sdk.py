@@ -32,6 +32,7 @@ class CameraSdkInterface(ABC):
                         self.camera_info = camera_info
                         break
         if self.camera_info is None:
+            print(self.getDeviceList())
             raise ValueError("未找到对应的相机")
     @abstractmethod
     def init(self):

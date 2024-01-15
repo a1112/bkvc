@@ -7,7 +7,7 @@ configFile: demo/hikCA-060-GM.yaml # 相机配置文件路径
 
 
 selectType: ip # 选择相机的方式  ip 为IP地址  serial 为串口号 index 为相机索引号
-ip: 192.168.3.12
+ip: 192.168.3.145
 mac: 00:00:C4:2F:90:F3:CB:83
 
 
