@@ -17,7 +17,7 @@ from BKVisionCamera.base.property import CameraInfo, CameraSdkInterface, BasePro
 
 class MvSdk(CameraSdkInterface):
 
-    def __init__(self,property_:BaseProperty=None, camera_info: CameraInfo = None):
+    def __init__(self, property_: BaseProperty = None, camera_info: CameraInfo = None):
         super().__init__(property_, camera_info)
         self.cam = MvCamera()
 
@@ -62,10 +62,11 @@ class MvSdk(CameraSdkInterface):
             # 将字节数据转换为字符串
             string_data = buffer.value.decode('utf-8')
             return string_data
+
         def nto(addr):
             return socket.inet_ntoa(struct.pack('>L', addr))
 
-        stDeviceInfo.SpecialInfo.stGigEInfo: MV_GIGE_DEVICE_INFO
+        # stDeviceInfo.SpecialInfo.stGigEInfo: MV_GIGE_DEVICE_INFO
         camera_info.ipCfgOption = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nIpCfgOption)
         camera_info.ipCfgCurrent = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nIpCfgCurrent)
         camera_info.ip = nto(stDeviceInfo.SpecialInfo.stGigEInfo.nCurrentIp)

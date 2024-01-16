@@ -6,6 +6,9 @@ class CameraInfo:
         self.mac = ""
         self.ip = ""
         self.name = ""
+        self.cameraName = ""
+        self.serialNumber=""
+
 
     def __setattr__(self, key, value):
         print(key+" : "+str(value))

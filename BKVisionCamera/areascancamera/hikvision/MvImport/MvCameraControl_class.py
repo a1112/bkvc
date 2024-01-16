@@ -1,13 +1,15 @@
 # -- coding: utf-8 --
 
 import ctypes
-
+from pathlib import Path
 from ctypes import *
 
+from BKVisionCamera.CONFIG import DLL_ROOT
 from .CameraParams_const import *
 
 # Python3.8版本修改Dll加载策略, 默认不再搜索Path环境变量, 同时增加winmode参数以兼容旧版本
-dllname = r"D:\Project\LGSerer\API\utils\bkvc\dll\hikvision\MvCameraControl.dll"
+dllname = DLL_ROOT/"hikvision"/"MvCameraControl.dll"
+dllname = str(dllname)
 try:
     MvCamCtrldll = WinDLL(dllname, winmode=0)
 except:

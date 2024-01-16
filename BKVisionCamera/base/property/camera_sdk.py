@@ -5,7 +5,7 @@ from .camera_info import CameraInfo
 
 
 class CameraSdkInterface(ABC):
-    def __init__(self,property_=None, camera_info: CameraInfo = None):
+    def __init__(self, property_=None, camera_info: CameraInfo = None):
         self.property = property_
         if camera_info is not None:
             self.camera_info = camera_info
@@ -34,6 +34,7 @@ class CameraSdkInterface(ABC):
         if self.camera_info is None:
             print(self.getDeviceList())
             raise ValueError("未找到对应的相机")
+
     @abstractmethod
     def init(self):
         ...
@@ -43,6 +44,12 @@ class CameraSdkInterface(ABC):
         ...
 
     @staticmethod
+    @abstractmethod
+    def createCamera(cameraInfo):
+        ...
+
+    @staticmethod
+    @abstractmethod
     def getDeviceList() -> List[CameraInfo]:
         ...
 

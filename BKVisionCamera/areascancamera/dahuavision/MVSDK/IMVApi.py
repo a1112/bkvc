@@ -1,18 +1,25 @@
 # -- coding: utf-8 --
-
+from pathlib import Path
 import sys
 import ctypes
 import platform
-from IMVDefines import *
+
+from BKVisionCamera.CONFIG import DLL_ROOT
+
+from .IMVDefines import *
 
 
 # 加载SDK动态库
 # load SDK library
+print(sys.platform )
+
 if sys.platform == 'win32':
     print("Windows")
     bits, linkage = platform.architecture()
     if bits == '64bit':
-        MVSDKdll = WinDLL("../../../../../Runtime/x64/MVSDKmd.dll")
+        print(DLL_ROOT)
+        dllUrl = Path(DLL_ROOT)/"dahuavision"/ "MVSDKmd.dll"
+        MVSDKdll = WinDLL(str(dllUrl))
     else:
         MVSDKdll = WinDLL("../../../../../Runtime/Win32/MVSDKmd.dll")
 else:
@@ -20,7 +27,7 @@ else:
     MVSDKdll = CDLL("../../../lib/libMVSDK.so")
 
 
-class MvCamera():
+class MvCamera:
 
     def __init__(self):
         self._handle = c_void_p()  # 记录当前连接设备的句柄
@@ -535,7 +542,8 @@ class MvCamera():
     def IMV_RotateImage(self, pstRotateImageParam):
         MVSDKdll.IMV_RotateImage.argtype = (c_void_p, c_void_p)
         MVSDKdll.IMV_RotateImage.restype = c_int
-        # C原型:IMV_API int IMV_CALL IMV_RotateImage(IN IMV_HANDLE handle, IN_OUT IMV_RotateImageParam* pstRotateImageParam);
+        # C原型:IMV_API int IMV_CALL IMV_RotateImage(IN IMV_HANDLE handle, IN_OUT IMV_RotateImageParam*
+        # pstRotateImageParam);
         return MVSDKdll.IMV_RotateImage(self.handle, byref(pstRotateImageParam))
 
 
@@ -543,5 +551,6 @@ class MvCamera():
     def IMV_InternalWriteReg(self, regAddress, regValue, pLength):
         MVSDKdll.IMV_InternalWriteReg.argtype = (c_void_p, c_uint64, c_uint64, c_void_p)
         MVSDKdll.IMV_InternalWriteReg.restype = c_int
-        # C原型:IMV_API int IMV_CALL IMV_InternalWriteReg(IN IMV_HANDLE handle, IN uint64_t regAddress, IN uint64_t regValue, IN_OUT unsigned int* pLength);
+        # C原型:IMV_API int IMV_CALL IMV_InternalWriteReg(IN IMV_HANDLE handle, IN uint64_t regAddress, IN uint64_t
+        # regValue, IN_OUT unsigned int* pLength);
         return MVSDKdll.IMV_InternalWriteReg(self.handle, regAddress, regValue, byref(pLength))
