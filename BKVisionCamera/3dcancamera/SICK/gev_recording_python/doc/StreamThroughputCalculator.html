@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Visionary-B Two GigE Vision Camera Stream Throughput Calculator</title>
+    <meta charset="utf-8">
+    
+    <style>
+      body {
+        font-family:Helvetica,sans-serif
+      }
+      table, tr, td, th {
+        border:1px solid; 
+        border-collapse:collapse; 
+        padding:3px
+      }
+      th {
+        text-align:left; 
+        background-color:skyblue;
+      }
+      tr:has( output) { /* Does not work in Firefox... */
+        background-color:wheat;
+      }
+      input:read-only {
+        background-color:silver
+      }
+      noscript {
+        color:red
+      }
+    </style>
+    
+    <script>
+      /* Function to recalculate the outputs, called on page load and any form input */
+      function calculateOutputs() { 
+        /* Read all input field values */
+        const width = parseInt(document.getElementById("width").value);
+        const height = parseInt(document.getElementById("height").value);
+        const rangeOn = document.getElementById("rangeOn").checked;
+        const intensityOn = document.getElementById("intensityOn").checked;
+        const chunksOn = document.getElementById("chunksOn").checked;
+        const packetSize = parseInt(document.getElementById("packetSize").value);
+        const packetDelay = parseInt(document.getElementById("packetDelay").value);
+      
+        /* Constants */
+        const chunkDataSize = 76;
+        const rangePixelSize = 2; /* Coord3D_C16 */
+        const rangeDataSize = width * height * rangePixelSize;
+        const intensityPixelSize = 3; /* RGB8 */
+        const intensityDataSize = width * height * intensityPixelSize;
+        const ipHeaderSize = 20;
+        const udpHeaderSize = 8;
+        const ethernetHeaderSize = 14;
+        const gvspMultipartPayloadHeaderSize = 28;
+        const gvspImagePayloadHeaderSize = 20; /* (extended ID mode) */
+        const ethernetTickNs = 8; /* (1 byte transferred per tick) */
+        
+        /* Check if multi-part or image payload will be used (note that for simplicity we ignore here
+         * the esoteric chunk-only and nothing-enabled options). */
+        const multiPart = rangeOn && intensityOn;
+        /* Compute the payload size (parts are 4B-aligned, no padding in between or before the chunks). */
+        let payloadSize = 0;
+        if (rangeOn)
+        {
+          payloadSize += rangeDataSize;
+        }
+        if (intensityOn)
+        {
+          payloadSize += intensityDataSize;
+        }
+        if (chunksOn)
+        {
+          payloadSize += chunkDataSize;
+        }
+
+        /* Based on the effective payload header size (different for multi-part and image payload)
+         * we can calculate the (max) size of useful payload in a single packet... */
+        const gvspEffectivePayloadHeaderSize = multiPart ? gvspMultipartPayloadHeaderSize : gvspImagePayloadHeaderSize;
+        const payloadPerPacket = packetSize - (ipHeaderSize + udpHeaderSize + gvspEffectivePayloadHeaderSize);
+        /* ...and total number of payload packets in a block and other payload type specific data. */
+        let numPayloadPackets = 0;
+        let leaderSize = 0;
+        let trailerSize = 0;
+        function countPackets(dataSize)
+        {
+          return Math.ceil(dataSize / payloadPerPacket);
+        }
+        if (multiPart)
+        {
+          let numParts = 0;
+          if (rangeOn)
+          {
+            numPayloadPackets += countPackets(rangeDataSize);
+            ++numParts;
+          }
+          if (intensityOn)
+          {
+            numPayloadPackets += countPackets(intensityDataSize);
+            ++numParts;
+          }
+          if (chunksOn)
+          {
+            numPayloadPackets += countPackets(chunkDataSize);
+            ++numParts;
+          }
+
+          const multipartLeaderCommon = 32;
+          const multipartLeaderPerPart = 48;
+          leaderSize = multipartLeaderCommon + numParts * multipartLeaderPerPart + ipHeaderSize + udpHeaderSize;
+
+          const multipartTrailerCommon = 24;
+          const multipartTrailerPerPart = 16;
+          trailerSize = multipartTrailerCommon + numParts * multipartTrailerPerPart + ipHeaderSize + udpHeaderSize;
+        }
+        else
+        {
+          numPayloadPackets = countPackets(payloadSize);
+
+          const imageLeaderFields = 56;
+          leaderSize = imageLeaderFields + ipHeaderSize + udpHeaderSize;
+
+          const imageTrailerFields = 28;
+          trailerSize = imageTrailerFields + ipHeaderSize + udpHeaderSize;
+        }
+        /* In extended chunk mode the trailer receives two additional 4B fiels
+        if (chunksOn)
+        {
+          trailerSize += 8;
+        }
+        /* Full size of the payload packets including the headers */
+        const totalPayloadPackets = payloadSize + numPayloadPackets * (ipHeaderSize + udpHeaderSize + gvspEffectivePayloadHeaderSize);
+        /* Total number of packets includes leader and trailer... */
+        const packetsPerBlock = numPayloadPackets + 2;
+
+        /* Calculate the protocol overhead */
+        const ethernetHeaders = packetsPerBlock * ethernetHeaderSize;
+        const ethernetBytesTotal = totalPayloadPackets + leaderSize + trailerSize + ethernetHeaders;
+        const protocolOverhead = (ethernetBytesTotal / payloadSize - 1) * 100; /* percent */
+
+        /* Calculate the block transmission time (1B of data transferred per Ethenet tick) */
+        const idealXferTimeMs = ethernetTickNs * ethernetBytesTotal / 1e6;
+        const totalDelayMs = packetDelay * packetsPerBlock / 1e6;
+        const delayedXferTimeMs = idealXferTimeMs + totalDelayMs;
+        const throughputRatio = delayedXferTimeMs / idealXferTimeMs;
+        const maxFrameRate = 1000 / delayedXferTimeMs;
+        
+      
+        /* Get access to the output elements... */
+        let fldPayloadType = document.getElementById("payloadType");
+        let fldPayloadSize = document.getElementById("payloadSize");
+        let fldPayloadPerPacket = document.getElementById("payloadPerPacket");
+        let fldPacketsPerBlock = document.getElementById("packetsPerBlock");
+        let fldProtocolOverhead = document.getElementById("protocolOverhead");
+        let fldIdealXferTime = document.getElementById("idealXferTime");
+        let fldDelayedXferTime = document.getElementById("delayedXferTime");
+        let fldThroughputRatio = document.getElementById("throughputRatio");
+        let fldMaxFrameRate = document.getElementById("maxFrameRate");
+
+        /* ...and fill the final results back into the output fields */
+        fldPayloadType.value = multiPart ? "Multi-part" : "Image";
+        fldPayloadSize.value = payloadSize;
+        fldPayloadPerPacket.value = payloadPerPacket;
+        fldPacketsPerBlock.value = packetsPerBlock;
+        fldProtocolOverhead.value = protocolOverhead.toFixed(2);
+        fldIdealXferTime.value = idealXferTimeMs.toFixed(2);
+        fldDelayedXferTime.value = delayedXferTimeMs.toFixed(2);
+        fldThroughputRatio.value = throughputRatio.toFixed(2);
+        fldMaxFrameRate.value = maxFrameRate.toFixed(2);
+      }
+    </script>
+  </head>
+  
+  <body onload="calculateOutputs()">
+    <h1>Visionary-B Two GigE Vision Camera Stream Throughput Calculator</h1>
+    <noscript><p><strong>This calculator cannot work properly with disabled JavaScript.</strong></p></noscript>
+    <p>Trivial calculator demonstrating dependencies between the Visionary-B Two camera output component selection, packet size and packet delay on the actual stream contents: packets and their timing. You can experiment with the inputs and see expected impact on the stream timing. Note that the numbers are only theoretical: the actual packet delays can be slightly higher than the configured values and packet resends would also affect the result (increasing number of stream packets).</p>
+    
+    <form oninput="calculateOutputs()"><table>
+      <tr>
+        <th colspan="4">Camera output configuration</th>
+      </tr>
+      <tr>
+        <td>Image width</td>
+        <td><input id="width" value="1024" readonly></td>
+        <td>px</td>
+        <td>Image size is fixed on Visionary-B Two.</td>
+      </tr>
+      <tr>
+        <td>Image height</td>
+        <td><input id="height" value="576" readonly></td>
+        <td>px</td>
+        <td>Image size is fixed on Visionary-B Two.</td>
+      </tr>
+      <tr>
+        <td>Range component</td>
+        <td><input id="rangeOn" type="checkbox" checked></td>
+        <td> </td>
+        <td>Enabled/disabled using ComponentEnable[ComponentSelector=Range].</td>
+      </tr>
+      <tr>
+        <td>Intensity component</td>
+        <td><input id="intensityOn" type="checkbox" checked></td>
+        <td> </td>
+        <td>Enabled/disabled using ComponentEnable[ComponentSelector=Intensity].</td>
+      </tr>
+      <tr>
+        <td>Chunk data</td>
+        <td><input id="chunksOn" type="checkbox" checked></td>
+        <td> </td>
+        <td>Enabled/disabled using ChunkModeActive.</td>
+      </tr>
+      <tr>
+        <th colspan="4">Stream configuration</th>
+      </tr>
+      <tr>
+        <td>Packet size</td>
+        <td><input id="packetSize" type="number" value="9000" max="9000" min="576"></td>
+        <td>B</td>
+        <td>The packet size will usually be negotiated between the application and the camera and can be read from GevSCPSPacketSize.<br>It should be equal (or very near to) 9000&nbsp;B if your network card supports jumbo frames (1500&nbsp;otherwise).</td>
+      </tr>
+      <tr>
+        <td>Packet delay</td>
+        <td><input id="packetDelay" type="number" value="0" max="1e7" min="0"></td>
+        <td>ns</td>
+        <td>Artificial delay the camera will insert between consecutive stream packets, configured using GevSCPD feature. Treated as minimum, actual value might be slightly higher.<br>The unit is in nanoseconds, but the actual resolution of the timer is lower (and also Ethernet tick frequency is 8&nbsp;ns).</td>
+      </tr>
+      <tr>
+        <th colspan="4">Resulting stream properties: payload &amp; packets</th>
+      </tr>
+      <tr>
+        <td>Payload type</td>
+        <td><output id="payloadType"></output></td>
+        <td></td>
+        <td>The camera will use GigE Vision &quot;image&quot; payload type if only one component is selected, &quot;multi-part&quot; payload type otherwise.</td>
+      </tr>
+      <tr>
+        <td>Payload size</td>
+        <td><output id="payloadSize"></output></td>
+        <td>B</td>
+        <td>Size of the useful data (range/intensity components, chunk data) transferred within the stream for a single block.<br>Readable from PayloadSize feature, corresponds to the acquisition buffer size.</td>
+      </tr>
+      <tr>
+        <td>Payload per packet</td>
+        <td><output id="payloadPerPacket"></output></td>
+        <td>B</td>
+        <td>Size of the useful data in a single packet (last packet of the block/part can be smaller).</td>
+      </tr>
+      <tr>
+        <td>Packets per block</td>
+        <td><output id="packetsPerBlock"></output></td>
+        <td></td>
+        <td>Number of packets (including the control packets) required to transfer a single data stream block.</td>
+      </tr>
+      <tr>
+        <td>Protocol overhead</td>
+        <td><output id="protocolOverhead"></output></td>
+        <td>%</td>
+        <td>Portion of the "wasted" bandwidth (used for all kinds of protocol headers).</td>
+      </tr>
+      <tr>
+        <th colspan="4">Resulting stream properties: timing &amp; throughput</th>
+      </tr>
+      <tr>
+        <td>Ideal transmission time</td>
+        <td><output id="idealXferTime"></output></td>
+        <td>ms</td>
+        <td>Theoretical only (!) time required to transfer a single data stream block in given configuration, without packet delay.<br>Assumes fully loaded link (no delays introduced by the camera), no resends, no control packets or other communication.</td>
+      </tr>
+      <tr>
+        <td>Delayed transmission time</td>
+        <td><output id="delayedXferTime"></output></td>
+        <td>ms</td>
+        <td>Again theoretical only (!) block transfer time including effect of the currently configured packet delay.<br>The actual transmission time will be always somewhat higher because of other communication on the wire (control, resends...) and because the effective delays between individual packets are usually higher than the configured value, treated as minimum.</td>
+      </tr>
+      <tr>
+        <td>Throughput ratio</td>
+        <td><output id="throughputRatio"></output></td>
+        <td>&times;</td>
+        <td>Factor showing how many times the configured packet delay reduces the throughput from the ideal fully loaded Ethernet link case.<br>For example when 4 cameras are sharing a common link, aiming for ratio of at least 4&times; is recommended.<br>As always, reserving part of the bandwidth for control channel and resends should be considered.</td>
+      </tr>
+      <tr>
+        <td>Max frame rate</td>
+        <td><output id="maxFrameRate"></output></td>
+        <td>Hz</td>
+        <td>Maximal frame rate achievable with currently selected camera configuration and packet delay.<br>Same as with other calculations in this section, this is only an ideal value - the actual achievable frame rate will be slightly lower due to the same reasons as discussed next to the transmission time values.<br>Note that the frame rate is always affected by other camera parameters, such as exposure time, and the absolute maximal frame rate value of Visionary-B Two is 30&nbsp;Hz.</td>
+      </tr>
+    </table></form>
+  </body>
+</html>
