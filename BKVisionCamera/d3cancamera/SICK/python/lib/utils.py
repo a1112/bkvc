@@ -11,7 +11,7 @@ else:
 import numpy as np
 from toml import loads
 from harvesters.core import Harvester
-from lib.gev_helper import apply_param, set_components
+from .gev_helper import apply_param, set_components
 from os import path
 import platform
 from time import time
@@ -140,7 +140,7 @@ def doFetch(camera, config):
         data = component.data
         print(component)
         print(data)
-        data=data.reshape((data.shape[0]//2560),2560)
+        data = data.reshape((data.shape[0]//2560),2560)
         cv2.namedWindow("frame"+str(index), cv2.WINDOW_NORMAL)
         cv2.imshow("frame"+str(index), data)
       if cv2.waitKey(1) & 0xFF == ord('q'):

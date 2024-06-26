@@ -6,6 +6,7 @@ from .camera_info import CameraInfo
 
 class CameraSdkInterface(ABC):
     def __init__(self, property_=None, camera_info: CameraInfo = None):
+
         self.property = property_
         if camera_info is not None:
             self.camera_info = camera_info
@@ -16,6 +17,7 @@ class CameraSdkInterface(ABC):
             print(property_.selectType)
             print(property_.ip)
             for index, camera_info in enumerate(self.camera_info_list):
+                print(camera_info)
                 print(camera_info.ip)
 
                 camera_info: CameraInfo
@@ -43,6 +45,9 @@ class CameraSdkInterface(ABC):
     def release(self):
         ...
 
+    @abstractmethod
+    def getFrame(self):
+        ...
     @staticmethod
     @abstractmethod
     def createCamera(cameraInfo):
@@ -60,3 +65,14 @@ class CameraSdkInterface(ABC):
     @abstractmethod
     def loadConfig(self, config):
         ...
+
+    @property
+    def width(self):
+        return 0
+
+    @property
+    def height(self):
+        return 0
+
+    def setExposureTime(self, exposureTime):
+        pass

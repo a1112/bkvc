@@ -60,7 +60,6 @@ def main(args):
         harvester = init_harvester()
         device_ids = select_devices(harvester.device_info_list, config)
         cameras = setup_camera_objects(harvester, device_ids)
-        print(cameras)
         for cam in cameras:
           try:
             config_camera(cam, config)

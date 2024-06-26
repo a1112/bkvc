@@ -1,6 +1,7 @@
 from .base import SingCameraAll
 from .base.property import BaseProperty, CaptureModel
 from .areascancamera.hikvision import HikCamera
+from .d3cancamera.SICK.sick_camera import SickCamera
 
 
 def crate_capter(property_) -> CaptureModel:

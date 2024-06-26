@@ -7,6 +7,7 @@ import numpy as np
 
 
 def apply_param(nodeMapObj, paramName, paramValue):
+    print("设置参数"+paramName+"为"+str(paramValue))
     """Helper function to apply paramName/paramValue pairs to a given node_map (from Harvesters ImageAcquirer).
     It is expected, that paramValues have types like they were read via toml.
     """

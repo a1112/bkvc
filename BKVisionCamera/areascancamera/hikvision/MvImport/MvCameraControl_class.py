@@ -29,7 +29,7 @@ _MV_PY_OBJECT_._fields_ = [
 MV_PY_OBJECT = _MV_PY_OBJECT_
 
 
-class MvCamera():
+class MvCamera:
 
     def __init__(self):
         self._handle = c_void_p()  # 记录当前连接设备的句柄

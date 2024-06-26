@@ -15,7 +15,6 @@ class TestHikAreaGm:
             cap: HikCamera
             i = 0
             while i<1000:
-
                 frame = cap.getFrame()
                 i += 1
                 tq.update(1)
