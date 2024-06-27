@@ -28,7 +28,6 @@ def apply_param(nodeMapObj, paramName, paramValue):
         command = "nodeMapObj.{}.value = {}".format(paramName, paramValue)
     else:
         warning(f"Failed to apply param: {paramName} = {paramValue}")
-
     try:
         exec(command)
     except Exception as err:
