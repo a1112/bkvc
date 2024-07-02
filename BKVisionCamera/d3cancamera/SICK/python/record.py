@@ -4,7 +4,7 @@
 
 """Recorder for multiple (Visionary) GigE cameras"""
 
-from argparse import Action, ArgumentParser, RawDescriptionHelpFormatter as rdhf
+from argparse import Action, ArgumentParser, RawDescriptionHelpFormatter as rdhf, ArgumentTypeError
 from logging import basicConfig, info, INFO, error
 from os import environ as env
 from lib.utils import *
@@ -48,24 +48,21 @@ def setup_camera_objects(harvester, device_ids):
         cameras.append(setup_camera_object(harvester, idx))
     return cameras
 
-
 def main(args):
-    harvester = None
-    cameras = None
+    harvester = init_harvester()
     try:
         config = parse_config(args.config)
-        if 'env' in config:
-          for key, value in config['env'].items():
-            env[key] = str(value)
-        harvester = init_harvester()
+        # if 'env' in config:
+        #   for key, value in config['env'].items():
+        #     env[key] = str(value)
         device_ids = select_devices(harvester.device_info_list, config)
         cameras = setup_camera_objects(harvester, device_ids)
-        for cam in cameras:
-          try:
-            config_camera(cam, config)
-          except Exception as err:
-            print("Error while configuring the camera, please double check correctness of the config file ({})".format(err))
-            raise
+        # for cam in cameras:
+        #   try:
+        #     config_camera(cam, config)
+        #   except Exception as err:
+        #     print("Error while configuring the camera, please double check correctness of the config file ({})".format(err))
+        #     raise
 
         info("Open storage files")
         for cam in cameras:
@@ -77,10 +74,10 @@ def main(args):
           raise RuntimeError("No cameras in the list - please double check whether the config file contains valid serial numbers identifying the cameras to use")
 
         t_start = time()
-        args.num_frames = 10
-        maybe_capture_secs(cameras, config, t_start, args.duration)
+        args.num_frames = 1000
+        # maybe_capture_secs(cameras, config, t_start, args.duration)
         maybe_capture_num_frames(cameras, config, args.num_frames)
-        maybe_capture_auto_bracket(cameras, args.auto_bracket)
+        # maybe_capture_auto_bracket(cameras, args.auto_bracket)
         elapsed = time() - t_start
         
         for cam in cameras:

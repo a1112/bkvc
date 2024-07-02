@@ -37,6 +37,7 @@ class BaseProperty(object):
         self.configFile = self.yaml_dict.get('configFile', None)
         self.ip = self.yaml_dict.get('ip', None)
         self.mac = self.yaml_dict.get('mac', None)
+        self.sn = str(self.yaml_dict.get('sn', None))
         self.index = self.yaml_dict.get('index', None)
 
 

@@ -7,8 +7,8 @@ class CameraInfo:
         self.ip = ""
         self.name = ""
         self.cameraName = ""
-        self.serialNumber=""
-
+        self.serialNumber = ""
+        self.sn = ""
 
     def __setattr__(self, key, value):
         print(key+" : "+str(value))

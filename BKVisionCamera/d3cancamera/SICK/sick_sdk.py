@@ -3,11 +3,15 @@ import socket
 import struct
 from ctypes import POINTER, cast, c_ubyte, byref, sizeof, create_string_buffer
 from typing import List
-
+import copy
 import cv2
 import harvesters
 import csv
 from  pathlib import Path
+
+from harvesters.core import Component2DImage
+from harvesters.util.pfnc import Coord3D_C16
+
 from .python.lib import apply_param, set_components
 from .python.lib.utils import init_harvester, DEVICE_ACCESS_STATUS_READWRITE, setup_camera_object, FETCH_TIMEOUT
 
@@ -94,6 +98,7 @@ class SickSdk(CameraSdkInterface):
         camera_info.vendor = camera_.vendor
         camera_info.access_status = camera_.access_status
         camera_info.device_id = camera_.display_name
+        camera_info.sn=camera_.serial_number
         return camera_info
 
     def saveConfig(self, config):
@@ -101,6 +106,17 @@ class SickSdk(CameraSdkInterface):
             pass
 
     def loadConfig(self, config):
+
+        # 设置参数AcquisitionFrameRate为5
+        # 设置参数ExposureTime为1
+        # 设置参数GevSCPD为0
+        # 设置参数ChunkModeActive为True
+        apply_param(self.camera['nm'], "AcquisitionFrameRate", 5)
+        apply_param(self.camera['nm'], "ExposureTime", 1)
+        apply_param(self.camera['nm'], "GevSCPD", 0)
+        apply_param(self.camera['nm'], "ChunkModeActive", True)
+        set_components(self.camera['nm'], [ 'Intensity' ])
+        return
         configFile = config
         if Path(configFile).exists():
             csv_reader = csv.reader(open(configFile, 'r', encoding='utf-8'))
@@ -118,19 +134,35 @@ class SickSdk(CameraSdkInterface):
             #     set_components(self.camera['nm'], config['gev_config']['ComponentList'])
     def open(self):
         self.camera = self.createCamera(self.camera_info)
-        self.loadConfig(self.property.configFile)
-        self.setExposureTime(1000)
+        # self.loadConfig(self.property.configFile)
+        # self.setExposureTime(1)
         self.camera['ia'].start()
 
     def getFrame(self):
         with self.camera['ia'].fetch(timeout=FETCH_TIMEOUT) as buffer:
             buffer: harvesters.core.Buffer
             dataList = []
-            for index, component in enumerate(buffer.payload.components):
-                data = component.data
-                data = data.reshape((data.shape[0] // 2560), 2560)
-                dataList.append(data)
-            return dataList[0]
-
+            # for index, component in enumerate(buffer.payload.components):
+            #     data = component.data
+            #     data = data.reshape((data.shape[0] // 2560), 2560)
+            #     dataList.append(data)
+            # return dataList
+            yield buffer
+            # for index, component in enumerate(buffer.payload.components):
+            #     print(component.data_format)
+            #     print(len(buffer.payload.components))
+            #     data = component.data
+            #     print(component)
+            #     print(data)
+            #     Coord3D_C16
+            #     Component2DImage
+            #     data = data.reshape((data.shape[0] // 2560), 2560)
+            #     dataList.append(component)
+            # yield dataList
+                # cv2.namedWindow("frame" + str(index), cv2.WINDOW_NORMAL)
+                # cv2.imshow("frame" + str(index), data)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     return
+            # camera['frameCount'] += 1
     def setExposureTime(self, exposureTime):
         apply_param(self.camera['nm'], "ExposureTime", exposureTime)

@@ -33,10 +33,16 @@ import os
 import time
 import ipaddress
 
+def getH():
+    validate_setup()
+    with Harvester() as h:
+        cti = get_cti_path()
+        h.add_file(cti, check_existence=True, check_validity=True)
+        h.update()
+        return h
 # Main script code
 def main():
   # Parse the arguments
-  validate_setup()
   args = parse_arguments()
 
   # All of the actions require access to Harvester using the SICK GenTL Producer with freshly discovered device list
@@ -402,3 +408,4 @@ if __name__ == '__main__':
     print("ERROR: an exception was raised while executing the script, please revise the input parameter correctness ({})".format(err))
     # (to further debug the exception, re-raising it here might help to get its context if desired: uncomment following line)
     # raise
+#

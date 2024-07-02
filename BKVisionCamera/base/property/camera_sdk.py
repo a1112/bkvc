@@ -33,6 +33,10 @@ class CameraSdkInterface(ABC):
                     if index == property_.index:
                         self.camera_info = camera_info
                         break
+                elif property_.selectType == "sn":
+                    if camera_info.sn == property_.sn:
+                        self.camera_info = camera_info
+                        break
         if self.camera_info is None:
             print(self.getDeviceList())
             raise ValueError("未找到对应的相机")

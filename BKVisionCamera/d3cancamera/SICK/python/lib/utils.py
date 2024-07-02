@@ -86,12 +86,12 @@ def init_harvester():
         h = Harvester()
         cti = get_cti_path()
         h.add_file(cti, check_existence=True, check_validity=True)
-        info("CTI driver loaded...")
+        print("CTI driver loaded...")
         h.update()
-        info(f"Device discovery done, received {len(h.device_info_list)} answers")
+        print(f"Device discovery done, received {len(h.device_info_list)} answers")
         return h
     except Exception as err:
-        error(f"No devices found: {err}")
+        print(f"No devices found: {err}")
         exit(1)
 
 
@@ -146,9 +146,9 @@ def doFetch(camera, config):
       if cv2.waitKey(1) & 0xFF == ord('q'):
         return
       camera['frameCount'] += 1
-      if camera['frameCount'] % config['cameras']['recordingRate'] == 0:
-          camera['recordedCount'] += 1
-          camera['writer'].store(buffer, camera['nm'])
+      # if camera['frameCount'] % config['cameras']['recordingRate'] == 0:
+      #     camera['recordedCount'] += 1
+      #     camera['writer'].store(buffer, camera['nm'])
 
 
 
