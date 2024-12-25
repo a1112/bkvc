@@ -1,0 +1,19 @@
+# Encoding: utf-8
+# Function: 海康CA-060-GM
+
+
+name: Hikvision #  Hikvision 海康机器人 CCD
+#
+
+
+selectType: serialNumber # 选择相机的方式  ip 为IP地址  serial 为串口号 index 为相机索引号
+ip: 192.168.106.201
+mac: 00:00:00:21:49:06:97:6F
+serialNumber: GBZ24100556
+
+
+
+
+useOtherConfig: false # 是否使用其他配置文件
+cameraConfig:   #  Camera 其他 相机配置
+    exposureTime: 500 # 曝光时间

@@ -40,5 +40,6 @@ class BaseProperty(object):
         self.sn = str(self.yaml_dict.get('sn', None))
         self.index = self.yaml_dict.get('index', None)
 
-
+    def __getattr__(self, item):
+        return self.yaml_dict[item]
 

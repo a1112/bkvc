@@ -1,8 +1,8 @@
 class CameraInfo:
     _info_ = {}
 
-    def __init__(self, devInfo):
-        self._devInfo_ = devInfo
+    def __init__(self, dev_info):
+        self._devInfo_ = dev_info
         self.mac = ""
         self.ip = ""
         self.name = ""

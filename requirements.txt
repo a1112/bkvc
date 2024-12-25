@@ -1,3 +1,5 @@
 tqdm
 pypattyrn
 pyyaml
+pytest
+opencv-python
