@@ -18,7 +18,6 @@ class TestHikAreaGm:
                 frame = cap.getFrame()
                 i += 1
                 tq.update(1)
-                print(frame)
                 if frame is None:
                     break
                 # cv2.imshow("frame", frame)

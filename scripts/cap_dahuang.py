@@ -7,7 +7,7 @@ tq = tqdm(desc="采集中。。。")
 with capter as cap:
     cap: HikCamera
     i = 0
-    while i<1000:
+    while i<10000000:
         frame = cap.getFrame()
         i += 1
         tq.update(1)
