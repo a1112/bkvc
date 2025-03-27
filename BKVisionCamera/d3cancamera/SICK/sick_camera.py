@@ -1,6 +1,6 @@
 from BKVisionCamera.base import register
 from BKVisionCamera.base.property.capture import CaptureModel
-from .sick_sdk import SickSdk
+# from .sick_sdk import SickSdk
 
 @register()
 class SickCamera(CaptureModel):

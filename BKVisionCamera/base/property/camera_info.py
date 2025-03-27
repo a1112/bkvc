@@ -11,9 +11,14 @@ class CameraInfo:
         self.sn = ""
 
     def __setattr__(self, key, value):
-        print(key+" : "+str(value))
+        if value:
+            print(key+" : "+str(value))
         super().__setattr__(key, value)
 
     def __eq__(self, other):
         other: CameraInfo
-        return self.mac == other.mac or self.ip == other.ip
+        if self.mac:
+            return self.mac == other.mac
+        if self.serialNumber:
+            return self.serialNumber==other.serialNumber
+        return self.ip == other.ip

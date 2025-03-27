@@ -10,7 +10,7 @@ import numpy as np
 from BKVisionCamera.areascancamera.hikvision.MvImport.CameraParams_const import MV_GIGE_DEVICE, MV_USB_DEVICE, \
     MV_ACCESS_Exclusive, MV_CAMERALINK_DEVICE
 from BKVisionCamera.areascancamera.hikvision.MvImport.CameraParams_header import MV_CC_DEVICE_INFO_LIST, \
-    MV_CC_DEVICE_INFO, MV_TRIGGER_MODE_OFF, MV_FRAME_OUT_INFO_EX, MVCC_ENUMVALUE, MVCC_INTVALUE, MV_GIGE_DEVICE_INFO
+    MV_CC_DEVICE_INFO, MV_TRIGGER_MODE_OFF,MV_TRIGGER_MODE_ON, MV_FRAME_OUT_INFO_EX, MVCC_ENUMVALUE, MVCC_INTVALUE, MV_GIGE_DEVICE_INFO
 from BKVisionCamera.areascancamera.hikvision.MvImport.MvCameraControl_class import MvCamera
 from BKVisionCamera.base.property import CameraInfo, CameraSdkInterface, BaseProperty
 
@@ -97,10 +97,12 @@ class MvSdk(CameraSdkInterface):
         stDevList, ret = self._enumDevices_()
         index = -1
         for i in range(stDevList.nDeviceNum):
+            print("stDevList.pDeviceInfo[i]", stDevList.pDeviceInfo[i])
             if self.camera_info == MvSdk.createCamera(stDevList.pDeviceInfo[i]):
                 index = i
                 break
-        print(index)
+        print(self.camera_info.ip)
+        print(fr"index {index}")
         stDevInfo = cast(stDevList.pDeviceInfo[index], POINTER(MV_CC_DEVICE_INFO)).contents
         # 选择第一台相机并创建句柄
         ret = self.cam.MV_CC_CreateHandle(stDevInfo)
@@ -118,8 +120,8 @@ class MvSdk(CameraSdkInterface):
         ret = self.cam.MV_CC_OpenDevice(MV_ACCESS_Exclusive, 0)
         if ret != 0:
             print(ret)
-            raise Exception("打开设备失败")
-        self.triggerMode = MV_TRIGGER_MODE_OFF
+            # raise Exception("打开设备失败")
+        # self.triggerMode = MV_TRIGGER_MODE_ON
         # 开始取流
 
     @property
@@ -131,7 +133,7 @@ class MvSdk(CameraSdkInterface):
         return stEnumValue.nCurValue
 
     @triggerMode.setter
-    def triggerMode(self, value=MV_TRIGGER_MODE_OFF):
+    def triggerMode(self, value=MV_TRIGGER_MODE_ON):
         self.cam.MV_CC_SetEnumValue("TriggerMode", value)
 
     @property

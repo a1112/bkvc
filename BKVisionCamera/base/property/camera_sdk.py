@@ -38,7 +38,7 @@ class CameraSdkInterface(ABC):
                         self.camera_info = camera_info
                         break
                 else:
-                    if getattr(camera_info, property_.selectType)==getattr(property_, property_.selectType):
+                    if getattr(camera_info, property_.selectType) == getattr(property_, property_.selectType):
                         self.camera_info = camera_info
                         break
 

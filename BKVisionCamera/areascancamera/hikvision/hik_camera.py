@@ -19,7 +19,10 @@ class HikCamera(CaptureModel):
         self.sdk.release()
 
     def getFrame(self):
-        return self.sdk.getFrame()
+        try:
+            return self.sdk.getFrame()
+        except:
+            return None
 
     def __init__(self, property_):
         super().__init__(property_)
